@@ -1,0 +1,12 @@
+[package]
+name = "ueplugingen"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["rlib", "cdylib"]
+
+[dependencies]
+log = { version = "0.4.17", features = ["std"] }
+askama = "0.12"
+paste = "1.0.14"

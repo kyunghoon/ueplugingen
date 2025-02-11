@@ -1,0 +1,32 @@
+<root xmlns:android="http://schemas.android.com/apk/res/android">
+<!-- For documentation on what this file does see https://forums.unrealengine.com/development-discussion/android-development/76381-how-do-i-include-native-libraries-from-a-plugin -->
+<!-- The basic idea is that this file tells what static libraries actually need to be copied into the final apk -->
+<!-- Also added the android permission for INTERNET because if you are using this sdk there is a 99% chance you want to use the internet -->
+<!-- init section is always evaluated once per architecture -->
+<init>
+</init>
+
+<!-- Copy files to the intermediate folder for the build process-->
+<resourceCopies>
+{%- for dylib in dylibs %}
+    <log text="Copying lib{{dylib}}.so from to Intermediate"/>
+    <copyFile src="$S(PluginDir)/Android/$S(Architecture)/lib{{dylib}}.so"
+        dst="$S(BuildDir)/libs/$S(Architecture)/lib{{dylib}}.so" />
+{%- endfor %}
+</resourceCopies>
+
+<!-- optional libraries to load in GameActivity.java before libUE4.so -->
+<soLoadLibrary>
+    <!-- Libraries have to be loaded in this orderd because they depend on eachother-->
+{%- for dylib in dylibs %}
+    <loadLibrary name="{{dylib}}" failmsg="Did not load lib{{dylib}} library" />
+{%- endfor %}
+</soLoadLibrary>
+
+<androidManifestUpdates>
+    <!-- Added this because if you are using this plugin you are probably going to use the internet-->
+{%- for name in permission_names %}
+    <addPermission android:name="android.permission.{{name}}"/>
+{%- endfor %}
+</androidManifestUpdates>
+</root>

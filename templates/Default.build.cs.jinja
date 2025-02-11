@@ -1,0 +1,43 @@
+using UnrealBuildTool;
+using System.IO;
+
+public class {{module_name}} : ModuleRules
+{
+    public {{module_name}}(ReadOnlyTargetRules Target) : base(Target)
+    {
+{%- for def in priv_defs %}
+        PrivateDefinitions.Add("{{def}}");
+{% endfor %}
+        PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+
+        PublicDependencyModuleNames.AddRange(new string[] { {{pub_deps}} });
+        PrivateDependencyModuleNames.AddRange(new string[] { {{priv_deps}} });
+
+        PublicIncludePaths.Add(ModuleDirectory);
+        PublicIncludePaths.AddRange(new string[] { {{pub_inc}} });
+        PrivateIncludePaths.AddRange(new string[] { {{priv_inc}} });
+{% if !dylibs.is_empty() %}
+        if (Target.Platform == UnrealTargetPlatform.Android) {
+            string AndroidPath = System.IO.Path.Combine(ModuleDirectory, UnrealTargetPlatform.Android.ToString(), "arm64-v8a");
+            AdditionalPropertiesForReceipt.Add("AndroidPlugin", System.IO.Path.Combine(ModuleDirectory, "BaseAPL.xml"));
+{%- for dylib in dylibs %}
+            PublicAdditionalLibraries.Add(System.IO.Path.Combine(AndroidPath, "lib{{dylib}}.so"));
+            RuntimeDependencies.Add(System.IO.Path.Combine(AndroidPath, "lib{{dylib}}.so"));
+{%- endfor %}
+        } else if (Target.Platform == UnrealTargetPlatform.Win64) {
+            string WindowPath = System.IO.Path.Combine(ModuleDirectory, UnrealTargetPlatform.Win64.ToString());
+{%- for dylib in dylibs %}
+            PublicAdditionalLibraries.Add(System.IO.Path.Combine(WindowPath, "{{dylib}}.dll.lib"));
+            PublicDelayLoadDLLs.Add("{{dylib}}.dll");
+            RuntimeDependencies.Add(System.IO.Path.Combine(WindowPath, "{{dylib}}.dll"));
+{%- endfor %}
+        } else if (Target.Platform == UnrealTargetPlatform.Mac) {
+            string MacPath = System.IO.Path.Combine(ModuleDirectory, UnrealTargetPlatform.Mac.ToString());
+{%- for dylib in dylibs %}
+            PublicAdditionalLibraries.Add(System.IO.Path.Combine(MacPath, "lib{{dylib}}.dylib"));
+            RuntimeDependencies.Add(System.IO.Path.Combine(MacPath, "lib{{dylib}}.dylib"));
+{%- endfor %}
+        }
+{%- endif %}
+    }
+}

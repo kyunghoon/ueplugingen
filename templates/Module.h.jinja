@@ -1,0 +1,29 @@
+#pragma once
+
+#include "HAL/PlatformCrt.h"
+#include "Modules/ModuleInterface.h"
+
+/**
+ * Online subsystem module class  ({{name}} Implementation)
+ * Code related to the loading of the {{name}} module
+ */
+class F{{name}}Module : public IModuleInterface
+{
+public:
+
+	F{{name}}Module();
+
+	virtual ~F{{name}}Module() {}
+
+	// IModuleInterface
+	virtual void StartupModule() override;
+	virtual void ShutdownModule() override;
+	virtual bool SupportsDynamicReloading() override { return false; }
+	virtual bool SupportsAutomaticShutdown() override { return false; }
+
+    static F{{name}}Module& Get();
+};
+
+#if UE_ENABLE_INCLUDE_ORDER_DEPRECATED_IN_5_2
+#include "CoreMinimal.h"
+#endif

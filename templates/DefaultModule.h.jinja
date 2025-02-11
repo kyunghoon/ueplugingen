@@ -1,0 +1,17 @@
+#pragma once
+
+#include "Modules/ModuleManager.h"
+#include "Misc/HotReloadInterface.h"
+#include "{{module_name}}Module.h"
+
+class F{{module_name}}Module : public IModuleInterface {
+public:
+    F{{module_name}}Module();
+
+    static inline F{{module_name}}Module* Get() {
+        static F{{module_name}}Module* module = NULL;
+        if (module == NULL)
+            module = (F{{module_name}}Module*)FModuleManager::Get().GetModule("{{module_name}}");
+        return module;
+    }
+};

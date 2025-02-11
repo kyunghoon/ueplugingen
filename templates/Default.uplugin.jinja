@@ -1,0 +1,44 @@
+{
+    "FileVersion": {{file_version}},
+    "Version": {{version}},
+    "VersionName": "{{version_name}}",
+    "FriendlyName": "{{friendly_name}}",
+    {% if !description.is_empty() %}"Description": "{{description}}",
+    {% endif -%}
+    {% if !category.is_empty() %}"Category": "{{category}}",
+    {% endif -%}
+    {% if !created_by.is_empty() %}"CreatedBy": "{{created_by}}",
+    {% endif -%}
+    {% if !created_by_url.is_empty() %}"CreatedByURL": "{{created_by_url}}",
+    {% endif -%}
+    {% if !docs_url.is_empty() %}"DocsURL": "{{docs_url}}",
+    {% endif -%}
+    {% if !marketplace_url.is_empty() %} "MarketplaceURL": "{{marketplace_url}}",
+    {% endif -%}
+    {% if !support_url.is_empty() %}"SupportURL": "{{support_url}}",
+    {% endif -%}
+    {% if can_contain_content %}CanContainContent": true,
+    {% endif -%}
+    {% if is_beta_version %}"IsBetaVersion": true,
+    {% endif -%}
+    {% if enabled_by_default %}"EnabledByDefault" : true,
+    {% endif -%}
+    {% if installed %}"Installed": true,
+    {% endif -%}
+    "Plugins": [{{plugins}}],
+    "Modules": [
+{%- for module in modules -%}
+    {%- if !loop.first %}, {% endif -%}
+    {
+        "Name": "{{ module.name }}",
+        "Type": "{{ module.ty}}",
+        "LoadingPhase": "{{ module.loading_phase }}",
+        "WhitelistPlatforms": [
+    {%- for platform in module.whitelist_platforms %}
+        {%- if !loop.first %}, {% endif -%}
+                "{{ platform }}"
+    {%- endfor -%}
+        ]
+    }
+{%- endfor %}]
+}
