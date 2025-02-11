@@ -4,7 +4,6 @@
 
 Example usage:
 
-    ```
     // build.rs
     use ueplugingen::*;
 
@@ -25,5 +24,3 @@ Example usage:
             })
             .generate(&"myplugin").expect("failed to generate plugin");
     }
-    ```
-
