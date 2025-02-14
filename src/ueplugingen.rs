@@ -29,8 +29,10 @@ pub enum CppItem {
     Source(CppSource),
 }
 
-pub struct ModuleCppSources<'a> {
-    pub sources: Vec<(&'a str, Vec<CppItem>)>,
+pub enum ModuleCppSources<'a> {
+    None,
+    WithDefaultModule(Vec<(&'a str, Vec<CppItem>)>),
+    WithoutDefaultModule(Vec<(&'a str, Vec<CppItem>)>)
 }
 
 pub struct AndroidConfig<'a> {
@@ -93,9 +95,10 @@ pub struct Module<'a> {
     pub priv_include_paths: &'a [&'a str],
     pub priv_defs: &'a [(&'a str, &'a str)],
     pub whitelist_platforms: &'a [&'a str],
-    pub sources: Option<ModuleCppSources<'a>>,
+    pub external_dylibs: &'a[&'a str],
     pub ty: HostType,
     pub loading_phase: LoadingPhase,
+    pub sources: ModuleCppSources<'a>,
 }
 
 struct PluginDep {
@@ -111,10 +114,9 @@ pub struct Builder<'a> {
     created_by_url: &'a str,
     version: u32,
     version_name: &'a str,
-    external_dylibs: &'a[&'a str],
     category: &'a str,
     description: &'a str,
-    module: Option<Module<'a>>,
+    modules: Vec<Module<'a>>,
     plugin_deps: Vec<PluginDep>,
     out_dir: Option<&'a Path>,
     rs_out_dir: Option<&'a str>,
@@ -137,10 +139,9 @@ impl<'a> Builder<'a> {
             created_by_url: "",
             version: 1,
             version_name: "",
-            external_dylibs: &[],
             category: "",
             description: "",
-            module: None,
+            modules: vec![],
             plugin_deps: vec![],
             out_dir: None,
             rs_out_dir: None,
@@ -379,16 +380,12 @@ impl<'a> Builder<'a> {
         self.version_name = v.into();
         self
     }
-    pub fn external_dynamic_libs(mut self, libs: &'a [&str]) -> Self {
-        self.external_dylibs = libs;
-        self
-    }
     pub fn description(mut self, v: impl Into<&'a str>) -> Self {
         self.description = v.into();
         self
     }
     pub fn module(mut self, module: Module<'a>) -> Self {
-        self.module = Some(module);
+        self.modules.push(module);
         self
     }
     pub fn out_dir(mut self, out_dir: &'a Path) -> Self {
@@ -452,7 +449,7 @@ impl<'a> Builder<'a> {
         });
         self
     }
-    pub fn generate(mut self, cargo_pkg_name: &str) -> Result<()> {
+    pub fn generate(self) -> Result<()> {
         if !self.enabled { return Ok(()) }
 
         let outdir = match self.out_dir.as_ref() {
@@ -469,7 +466,7 @@ impl<'a> Builder<'a> {
         write_only_if_changed(
             &outdir.join(format!("{}.uplugin", self.name)),
             || {
-                let modules = self.module.iter().collect::<Vec<_>>();
+                let modules = self.modules.iter().collect::<Vec<_>>();
                 self.write_plugin(modules.as_slice(), &self.plugin_deps)
             },
         )?;
@@ -481,9 +478,10 @@ impl<'a> Builder<'a> {
             Self::write_icon(self.icon, icon_file).unwrap();
         }
 
-        if let Some(module) = self.module.take() {
+        let num_modules = self.modules.len();
+        for module in self.modules {
             let mut moduledir = outdir.join("Source");
-            if module.name != self.name {
+            if module.name != self.name || num_modules > 1 {
                 moduledir = moduledir.join(module.name);
             }
             std::fs::create_dir_all(&moduledir).expect("failed to create output directory");
@@ -492,7 +490,7 @@ impl<'a> Builder<'a> {
                 &moduledir.join(format!("{}.build.cs", module.name)),
                 || {
                     Self::write_build(
-                        self.external_dylibs,
+                        module.external_dylibs,
                         &module.name,
                         module.pub_dep_mods,
                         module.priv_dep_mods,
@@ -506,17 +504,19 @@ impl<'a> Builder<'a> {
 
             let source_code = module.sources;//.map(|f| f(self.name, &module.name, lib_name.as_str())).transpose()?;
 
-            if let Some(android) = module.android.as_ref() {
-                let base_apl_file = File::create(moduledir.join("BaseAPL.xml")).unwrap();
-                Self::write_base_apl(android.permissions, self.external_dylibs, base_apl_file).unwrap();
+            if !module.external_dylibs.is_empty() {
+                if let Some(android) = module.android.as_ref() {
+                    let base_apl_file = File::create(moduledir.join("BaseAPL.xml")).unwrap();
+                    Self::write_base_apl(android.permissions, module.external_dylibs, base_apl_file).unwrap();
+                }
             }
 
             std::fs::create_dir_all(moduledir.join("Private")).unwrap();
             std::fs::create_dir_all(moduledir.join("Public")).unwrap();
 
-            let sources = source_code.map(|s| s.sources).unwrap_or(vec![
-                (module.name, {
-                    let name = module.name;
+            fn get_default_module<'a>(module_filename: &'a str, module_name: &'a str) -> Result<(&'a str, Vec<CppItem>)> {
+                Ok((module_filename, {
+                    let name = module_name;
                     vec![CppItem::Header(CppHeader {
                         is_pub: true,
                         contents: {
@@ -530,12 +530,22 @@ impl<'a> Builder<'a> {
                         contents: {
                             #[derive(Template)]
                             #[template(path = "Module.cpp.jinja", escape = "none")]
-                            struct Template<'a> { name: &'a str, }
-                            Template { name }.render()?
+                            struct Template<'a> { filename: &'a str, name: &'a str, }
+                            Template { filename: module_filename, name }.render()?
                         }
                     })]
-                })
-            ]);
+                }))
+            }
+
+            let default_module_filename = format!("{}Module", module.name);
+            let sources = match source_code {
+                ModuleCppSources::None => vec![get_default_module(&default_module_filename, module.name)?],
+                ModuleCppSources::WithDefaultModule(mut items) => {
+                    items.push(get_default_module(&default_module_filename, module.name)?);
+                    items
+                }
+                ModuleCppSources::WithoutDefaultModule(items) => items
+            };
 
             for (name, files) in sources {
                 for item in files {
