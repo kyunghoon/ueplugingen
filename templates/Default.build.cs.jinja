@@ -39,5 +39,9 @@ public class {{module_name}} : ModuleRules
 {%- endfor %}
         }
 {%- endif %}
+{%- if debug %}
+        OptimizeCode = CodeOptimization.Never;
+        PublicDefinitions.Add("DEBUG_BUILD=1");
+{%- endif %}
     }
 }

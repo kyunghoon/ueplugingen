@@ -99,6 +99,7 @@ pub struct Module<'a> {
     pub ty: HostType,
     pub loading_phase: LoadingPhase,
     pub sources: ModuleCppSources<'a>,
+    pub debug: bool,
 }
 
 struct PluginDep {
@@ -224,6 +225,7 @@ impl<'a> Builder<'a> {
         pub_include_paths: &[&str],
         priv_include_paths: &[&str],
         priv_defs: &[(&str, &str)],
+        debug: bool,
     ) -> Result<String> {
         let pub_deps = pub_dep_mods
             .iter()
@@ -259,7 +261,8 @@ impl<'a> Builder<'a> {
             pub_inc: &'a str,
             priv_inc: &'a str,
             priv_defs: &'a[String],
-            dylibs: &'a[&'a str]
+            dylibs: &'a[&'a str],
+            debug: bool,
         }
 
         Ok(BuildTemplate {
@@ -269,7 +272,8 @@ impl<'a> Builder<'a> {
             pub_inc: &pub_inc,
             priv_inc: &priv_inc,
             priv_defs: &priv_defs,
-            dylibs
+            dylibs,
+            debug, 
         }.render().unwrap())
     }
 
@@ -497,6 +501,7 @@ impl<'a> Builder<'a> {
                         module.pub_include_paths,
                         module.priv_include_paths,
                         module.priv_defs,
+                        module.debug,
                     )
                 },
             )
