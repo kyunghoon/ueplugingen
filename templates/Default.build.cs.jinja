@@ -5,6 +5,9 @@ public class {{module_name}} : ModuleRules
 {
     public {{module_name}}(ReadOnlyTargetRules Target) : base(Target)
     {
+{%- for def in pub_defs %}
+        PublicDefinitions.Add("{{def}}");
+{% endfor %}
 {%- for def in priv_defs %}
         PrivateDefinitions.Add("{{def}}");
 {% endfor %}

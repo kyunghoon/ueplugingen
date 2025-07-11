@@ -94,6 +94,7 @@ pub struct Module<'a> {
     pub pub_include_paths: &'a [&'a str],
     pub priv_include_paths: &'a [&'a str],
     pub priv_defs: &'a [(&'a str, &'a str)],
+    pub pub_defs: &'a [(&'a str, &'a str)],
     pub whitelist_platforms: &'a [&'a str],
     pub external_dylibs: &'a[&'a str],
     pub ty: HostType,
@@ -224,6 +225,7 @@ impl<'a> Builder<'a> {
         priv_dep_mods: &[&str],
         pub_include_paths: &[&str],
         priv_include_paths: &[&str],
+        pub_defs: &[(&str, &str)],
         priv_defs: &[(&str, &str)],
         debug: bool,
     ) -> Result<String> {
@@ -247,6 +249,10 @@ impl<'a> Builder<'a> {
             .map(|p| format!("\"{}\"", p))
             .collect::<Vec<_>>()
             .join(",");
+        let pub_defs = pub_defs
+            .iter()
+            .map(|(k, v)| format!("{k}={v}"))
+            .collect::<Vec<_>>();
         let priv_defs = priv_defs
             .iter()
             .map(|(k, v)| format!("{k}={v}"))
@@ -260,6 +266,7 @@ impl<'a> Builder<'a> {
             priv_deps: &'a str,
             pub_inc: &'a str,
             priv_inc: &'a str,
+            pub_defs: &'a[String],
             priv_defs: &'a[String],
             dylibs: &'a[&'a str],
             debug: bool,
@@ -271,6 +278,7 @@ impl<'a> Builder<'a> {
             priv_deps: &priv_deps,
             pub_inc: &pub_inc,
             priv_inc: &priv_inc,
+            pub_defs: &pub_defs,
             priv_defs: &priv_defs,
             dylibs,
             debug, 
@@ -500,6 +508,7 @@ impl<'a> Builder<'a> {
                         module.priv_dep_mods,
                         module.pub_include_paths,
                         module.priv_include_paths,
+                        module.pub_defs,
                         module.priv_defs,
                         module.debug,
                     )
