@@ -15,6 +15,11 @@ public class {{module_name}} : ModuleRules
 
         PublicDependencyModuleNames.AddRange(new string[] { {{pub_deps}} });
         PrivateDependencyModuleNames.AddRange(new string[] { {{priv_deps}} });
+{% if !priv_deps_ed.is_empty() %}
+        if (Target.bBuildEditor) {
+            PrivateDependencyModuleNames.AddRange(new string[] { {{priv_deps_ed}} });
+        }
+{%- endif %}
 
         PublicIncludePaths.Add(ModuleDirectory);
         PublicIncludePaths.AddRange(new string[] { {{pub_inc}} });

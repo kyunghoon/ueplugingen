@@ -86,11 +86,16 @@ impl std::fmt::Display for LoadingPhase {
     }
 }
 
+pub enum Dep<'a> {
+    Str(&'a str),
+    Ed(&'a str),
+}
+
 pub struct Module<'a> {
     pub name: &'a str,
     pub android: Option<AndroidConfig<'a>>,
     pub pub_dep_mods: &'a [&'a str],
-    pub priv_dep_mods: &'a [&'a str],
+    pub priv_dep_mods: &'a [Dep<'a>],
     pub pub_include_paths: &'a [&'a str],
     pub priv_include_paths: &'a [&'a str],
     pub priv_defs: &'a [(&'a str, &'a str)],
@@ -222,7 +227,7 @@ impl<'a> Builder<'a> {
         dylibs: &[&str],
         module_name: &str,
         pub_dep_mods: &[&str],
-        priv_dep_mods: &[&str],
+        priv_dep_mods: &[Dep],
         pub_include_paths: &[&str],
         priv_include_paths: &[&str],
         pub_defs: &[(&str, &str)],
@@ -234,8 +239,21 @@ impl<'a> Builder<'a> {
             .map(|p| format!("\"{}\"", p))
             .collect::<Vec<_>>()
             .join(",");
+        let priv_deps_ed = priv_dep_mods
+            .iter()
+            .filter_map(|p| match p {
+                Dep::Ed(s) => Some(s),
+                _ => None
+            })
+            .map(|p| format!("\"{}\"", p))
+            .collect::<Vec<_>>()
+            .join(",");
         let priv_deps = priv_dep_mods
             .iter()
+            .filter_map(|p| match p {
+                Dep::Str(s) => Some(s),
+                _ => None
+            })
             .map(|p| format!("\"{}\"", p))
             .collect::<Vec<_>>()
             .join(",");
@@ -263,6 +281,7 @@ impl<'a> Builder<'a> {
         struct BuildTemplate<'a> {
             module_name: &'a str,
             pub_deps: &'a str,
+            priv_deps_ed: &'a str, 
             priv_deps: &'a str,
             pub_inc: &'a str,
             priv_inc: &'a str,
@@ -275,6 +294,7 @@ impl<'a> Builder<'a> {
         Ok(BuildTemplate {
             module_name,
             pub_deps: &pub_deps,
+            priv_deps_ed: &priv_deps_ed,
             priv_deps: &priv_deps,
             pub_inc: &pub_inc,
             priv_inc: &priv_inc,
