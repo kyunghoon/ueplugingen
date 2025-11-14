@@ -2,6 +2,7 @@
 
 #include "HAL/PlatformCrt.h"
 #include "Modules/ModuleInterface.h"
+#include "Misc/EngineVersionComparison.h"
 
 /**
  * Online subsystem module class  ({{name}} Implementation)
@@ -24,6 +25,8 @@ public:
     static F{{name}}Module& Get();
 };
 
-#if UE_ENABLE_INCLUDE_ORDER_DEPRECATED_IN_5_2
-#include "CoreMinimal.h"
+#if !UE_VERSION_NEWER_THAN_OR_EQUAL(5,7,0)
+#  if UE_ENABLE_INCLUDE_ORDER_DEPRECATED_IN_5_2
+#    include "CoreMinimal.h"
+#  endif
 #endif
