@@ -1,5 +1,21 @@
-#include "{{module_name}}Module.h"
+// Copyright Epic Games, Inc. All Rights Reserved.
 
-F{{module_name}}Module::F{{module_name}}Module() {}
+#include "{{filename}}.h"
+#include "Modules/ModuleManager.h"
 
-IMPLEMENT_MODULE(F{{module_name}}Module, {{module_name}});
+IMPLEMENT_MODULE(F{{name}}Module, {{name}});
+
+F{{name}}Module::F{{name}}Module() {}
+
+void F{{name}}Module::StartupModule() { }
+
+void F{{name}}Module::ShutdownModule() { }
+
+F{{name}}Module& F{{name}}Module::Get() { 
+    static TOptional<F{{name}}Module*> MODULE = {};
+    if (!MODULE.IsSet()) {
+        MODULE = TOptional((F{{name}}Module*)FModuleManager::Get().GetModule("{{name}}"));
+        check(MODULE != nullptr);
+    };
+    return *MODULE.GetValue();
+}
